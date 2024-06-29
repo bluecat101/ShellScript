@@ -9,11 +9,16 @@
 # リモートブランチの名前とローカルブランチの名前は同じである必要があります。(ローカルブランチがどのリモートブランチと紐づいているのかを取得できる方法はありますが、大変であるため今回は同じ名前に限定しています。)
 
 # 説明(git apply -l)
-# git applyでDownloadから最新のpatchファイルを取ってくるコマンドです。
+# git applyでDownloadsから最新のpatchファイルを取ってくるコマンドです。
 # ---注意点---
-# $HOME(ホームディレクトリ)の直下にDownloadがあること(日本語で「ダウンロード」はNG)
+# $HOME(ホームディレクトリ)の直下にDownloadsがあること(日本語で「ダウンロード」はNG)
 # pathファイルもダウンロードにあること
 # "git apply -l　ファイル名"等のように使うとエラーが出ます。-lのみで使用します。
+
+# 説明(git diff -patch)
+# git diff > ファイル名を"日付.patch"で自動生成。Downloadsディレクトリに保存される
+# ---注意点---
+# $HOME(ホームディレクトリ)の直下にDownloadsがあること(日本語で「ダウンロード」はNG)
 ##############################################################################
 
 ### 作成する関数 ###
@@ -50,8 +55,16 @@ pull_delete(){
 apply_latest(){
   # findコマンドで全てのpatchファイルを取得してそこからls -ltで時系列順に並べて最初の項(最新のファイル)のみに対して表示されている一番後ろの要素であるパス名を取得する
   file_path=$(find $HOME/Downloads/ -name "*.patch" -print0| xargs -0 ls -lt | head -1 | awk '{print $NF}')
-  # 再度にRE_COMMAND(git apply)を表示するので、そこにファイルパスを追加しておく。
+  # 最後にRE_COMMAND(git apply)を表示するので、そこにファイルパスを追加しておく。
   RE_COMMAND=$RE_COMMAND" "$file_path
+}
+
+diff_get_patch_file(){
+  # 日付からpatchファイルを作成。同名のpatchファイルがある場合には上書きされる。
+  date=$(date "+%m%d")
+  file_path=$HOME"/Downloads/"$date".patch"
+  # 最後にRE_COMMAND(git diff)を実行するので、そこにファイルパスを追加しておく。
+  RE_COMMAND=$RE_COMMAND" > "$file_path
 }
 
 
@@ -101,10 +114,22 @@ do
         fi
       fi
       ;;
+    diff )
+      target_option="patch"
+      if [[ $arg =~ ^-[^-]+ && $arg =~ "$target_option" ]]; then
+        diff_get_patch_file
+        deleted_opt=$(echo "$arg" | sed -E "s/$target_option//g")
+        if [ $deleted_opt != "-" ]; then
+          arg=$deleted_opt
+        else
+          continue
+        fi
+      fi
+      ;;
   esac
   # 再度コマンドを実行する用にコマンドを再構築
   RE_COMMAND=$RE_COMMAND" "$arg
 done 
 
-# 追加オプションを消したコマンドを再実行 
-$RE_COMMAND
+# 追加オプションを消したコマンドを再実行。(">")を使用する場合があるので、evalを使っている。)
+eval $RE_COMMAND
