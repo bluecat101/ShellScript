@@ -1,13 +1,19 @@
 #!/bin/sh
 
 ## README ####################################################################
-# 説明
-# git pull -d を追加するコマンドです。
+# 説明(git pull -d )
 # git pull -dとはgit pullをしつつ、任意のブランチがリモートブランチに存在せず、リモート追跡ブランチが存在するときに、リモート追跡ブランチとローカルブランチを削除するオプションです。
 # つまり、git fetch -pに対してローカルブランチまで消すオプションです。
 # ---注意点---
 # リモートリポジトリの名称は一般的あるoriginである必要があります。(複数名称がある場合に処理が大変だったため拡張性を消しています。)
 # リモートブランチの名前とローカルブランチの名前は同じである必要があります。(ローカルブランチがどのリモートブランチと紐づいているのかを取得できる方法はありますが、大変であるため今回は同じ名前に限定しています。)
+
+# 説明(git apply -l)
+# git applyでDownloadから最新のpatchファイルを取ってくるコマンドです。
+# ---注意点---
+# $HOME(ホームディレクトリ)の直下にDownloadがあること(日本語で「ダウンロード」はNG)
+# pathファイルもダウンロードにあること
+# "git apply -l　ファイル名"等のように使うとエラーが出ます。-lのみで使用します。
 ##############################################################################
 
 ### 作成する関数 ###
@@ -17,7 +23,6 @@ pull_delete(){
 
   post_branch=$(git branch -a)
   git fetch -p >/dev/null
-  git branch -a >/dev/null
   current_branch=$(git branch -a)
   for post_b in ${post_branch[@]}; do
     # remotes/origin/HEADに対応するHEADブランチは基本的に存在しないため
@@ -40,6 +45,13 @@ pull_delete(){
       git branch -D ${post_b##$remote_branch_name}
     fi
   done
+}
+
+apply_latest(){
+  # findコマンドで全てのpatchファイルを取得してそこからls -ltで時系列順に並べて最初の項(最新のファイル)のみに対して表示されている一番後ろの要素であるパス名を取得する
+  file_path=$(find $HOME/Downloads/ -name "*.patch" -print0| xargs -0 ls -lt | head -1 | awk '{print $NF}')
+  # 再度にRE_COMMAND(git apply)を表示するので、そこにファイルパスを追加しておく。
+  RE_COMMAND=$RE_COMMAND" "$file_path
 }
 
 
@@ -69,6 +81,18 @@ do
         fi
         # 使用した追加オプションを消す。//を使ったパラメータ展開では動作しなかったためsedを使用。
         # 追加オプションを消した後に他のオプションが残っていれば、コマンドの再実行の時に使用するので、argにセットする。
+        deleted_opt=$(echo "$arg" | sed -E "s/$target_option//g")
+        if [ $deleted_opt != "-" ]; then
+          arg=$deleted_opt
+        else
+          continue
+        fi
+      fi
+      ;;
+    apply )
+      target_option="l"
+      if [[ $arg =~ ^-[^-]+ && $arg =~ "$target_option" ]]; then
+        apply_latest
         deleted_opt=$(echo "$arg" | sed -E "s/$target_option//g")
         if [ $deleted_opt != "-" ]; then
           arg=$deleted_opt
