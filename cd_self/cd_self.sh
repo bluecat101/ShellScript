@@ -1,27 +1,39 @@
 #!/bin/sh
-
+# 使用停止中　#
+# 使用停止中　#
+# 使用停止中　#
+# 使用停止中　#
 ### 説明 ##################
+# 使用停止中 #
+# cdに対して-1等のコマンドを追加したかったが、aliasでcd=''と設定すると、無限ループに入れるので使用ができない。
+# この理由として、cdを使っているので、コマンドを打つ際に .をつける必要があるので、その影響で失敗している。
+# また、defaultのcdコマンドを変更させようとしたが、うまくいかなかったため、断念
+# 使用停止中 #
+
 # cd -nでn個上の親に行く
+# aliasでcd="cd_self.sh"とやると無限ループに入るので注意
 ###########################
 
 # 引数を確認して第一引数の先頭に-があるかを確認
-if [[ $# == 1 && ${1:0:1} = "-" ]]; then
-  number=${1#-}
-  # "cd -0"か"-"ならカレントディレクトリを指す
-  if [[ $number == 0 || $number == "" ]]; then
-    file_path="./"
-  else
-  # cd -の時はcd ../と同義とする
-    file_path=""
-    # 数字の数だけ../を追加する
-    for i in $(seq 1 $number); do
-      file_path="$file_path../"
-    done
-  fi
-  # cdを直接呼ぶと再帰呼び出しになって無限ループするので、一度文字列化
-  command="cd $file_path"
-else
-  command="cd $@"
-fi
-# evalがないとcd $@ファイルを探そうとするため。
-eval $command
+# if [[ $# == 1 && ${1:0:1} = "-" ]]; then
+#   number=${1#-}
+#   # "cd -0"か"-"ならカレントディレクトリを指す
+#   if [[ $number == 0 || $number == "" ]]; then
+#     file_path="./"
+#   else
+#   # cd -の時はcd ../と同義とする
+#     file_path=""
+#     # 数字の数だけ../を追加する
+#     for i in $(seq 1 $number); do
+#       file_path="$file_path../"
+#     done
+#   fi
+#   # cdを直接呼ぶとエラー時の出力がわかりにくいのでevalで呼ぶ
+#   command="cd $file_path"
+#   # cd $file_path
+# else
+#   command="cd $@"
+#   # cd $@
+# fi
+# # evalがないとcd $@ファイルを探そうとするため。
+# eval $command
